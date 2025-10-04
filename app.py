@@ -6,7 +6,7 @@ from flask import Flask, request, send_from_directory, jsonify, render_template
 from werkzeug.utils import secure_filename
 import qrcode
 import tkinter as tk
-from ui.gui import AppGUI  # Import the new GUI class
+from ui.gui import AppGUI
 
 # --- Server Configuration ---
 PORT = 3000
@@ -15,18 +15,16 @@ HOST = "0.0.0.0"
 # --- Flask App Initialization ---
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# --- Shared State (managed via callbacks from the GUI) ---
+# --- Shared State ---
 shared_folder = None
 server_thread = None
 server_running = False
 
 def set_shared_folder(folder_path):
-    """Callback function for the GUI to set the shared folder."""
     global shared_folder
     shared_folder = folder_path
 
 def get_port():
-    """Function to provide the port to the GUI."""
     return PORT
 
 # --- Server Logic Functions ---
@@ -50,8 +48,7 @@ def generate_qr(ip, port=PORT, out_path='static/qr.png'):
 
 def start_server_thread():
     global server_thread, server_running
-    if server_running:
-        return
+    if server_running: return
     if not shared_folder:
         print("Error: No shared folder selected.")
         return
@@ -75,39 +72,28 @@ def index():
 
 @app.route('/api/list', methods=['GET'])
 def api_list():
-    if not shared_folder:
-        return jsonify({'error': 'No folder selected'}), 400
+    if not shared_folder: return jsonify({'error': 'No folder selected'}), 400
     rel = request.args.get('path', '')
     target = os.path.normpath(os.path.join(shared_folder, rel))
-    if not target.startswith(os.path.abspath(shared_folder)):
-        return jsonify({'error': 'Invalid path'}), 400
+    if not target.startswith(os.path.abspath(shared_folder)): return jsonify({'error': 'Invalid path'}), 400
     
     search_term = request.args.get('search', '').lower()
     sort_by = request.args.get('sort', 'name')
     items = []
     with os.scandir(target) as it:
         for entry in it:
-            if search_term and search_term not in entry.name.lower():
-                continue
+            if search_term and search_term not in entry.name.lower(): continue
             stat = entry.stat()
-            items.append({
-                'name': entry.name, 'is_dir': entry.is_dir(),
-                'size': stat.st_size, 'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
-            })
+            items.append({'name': entry.name, 'is_dir': entry.is_dir(), 'size': stat.st_size, 'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()})
 
     reverse_order = sort_by.endswith('_desc')
     sort_key = sort_by.removesuffix('_desc')
 
-    if sort_key == 'name':
-        items.sort(key=lambda x: x['name'].lower(), reverse=reverse_order)
-    elif sort_key == 'size':
-        items.sort(key=lambda x: x['size'], reverse=reverse_order)
-    elif sort_key == 'modified':
-        items.sort(key=lambda x: x['modified'], reverse=reverse_order)
+    if sort_key == 'name': items.sort(key=lambda x: x['name'].lower(), reverse=reverse_order)
+    elif sort_key == 'size': items.sort(key=lambda x: x['size'], reverse=reverse_order)
+    elif sort_key == 'modified': items.sort(key=lambda x: x['modified'], reverse=reverse_order)
     
-    # Always keep directories grouped at the top
     items.sort(key=lambda x: not x['is_dir'])
-
     return jsonify({'path': rel, 'items': items})
 
 @app.route('/download/<path:filepath>')
@@ -120,15 +106,27 @@ def download(filepath):
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    if 'file' not in request.files: return 'Missing file', 400
-    file = request.files['file']
-    dest_path = request.form.get('path', '')
-    if file.filename == '': return 'No selected file', 400
-    filename = secure_filename(file.filename)
-    save_dir = os.path.normpath(os.path.join(shared_folder, dest_path))
-    if not save_dir.startswith(os.path.abspath(shared_folder)): return 'Invalid path', 400
-    os.makedirs(save_dir, exist_ok=True)
-    file.save(os.path.join(save_dir, filename))
+    if 'files[]' not in request.files:
+        return 'Missing files', 400
+        
+    files = request.files.getlist('files[]')
+    dest_path = request.form.get('path', '') # This path is the subfolder inside the shared folder
+    
+    for file in files:
+        if file.filename == '':
+            continue
+        
+        filename = secure_filename(file.filename)
+        # The frontend will now send the correct sub-path for each file
+        save_dir = os.path.normpath(os.path.join(shared_folder, dest_path))
+        
+        if not save_dir.startswith(os.path.abspath(shared_folder)):
+            # This is a security check
+            return 'Invalid path detected', 400
+            
+        os.makedirs(save_dir, exist_ok=True)
+        file.save(os.path.join(save_dir, filename))
+        
     return 'OK', 200
 
 # --- Main Application Runner ---
