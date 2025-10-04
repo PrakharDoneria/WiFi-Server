@@ -4,34 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>LAN File Server</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>LAN File Server</h1>
-    <div class="header-right">
-      <img id="qr" src="/static/qr.png" alt="QR"/>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="upload">
-      <h2>Upload</h2>
-      <form id="uploadForm">
-        <input type="file" name="file" id="fileinput">
-        <input type="hidden" name="path" id="uploadPath" value="">
-        <button type="submit">Upload</button>
-      </form>
-      <div id="uploadStatus" class="muted"></div>
-    </section>
-
-    <section class="files">
-      <h2>Files</h2>
-      <nav id="breadcrumb"></nav>
-      <ul id="fileList"></ul>
-    </section>
-  </main>
-
-  <script src="/static/js/app.js"></script>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5.0.0/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script type="text/babel" src="/static/js/app.js"></script>
 </body>
 </html>

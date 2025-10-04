@@ -1,0 +1,25 @@
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Generated QR code image
+static/qr.png
+
+# Virtual environment folders
+venv/
+env/
+.venv/
+
+# IDE and editor configuration
+.idea/
+.vscode/
+*.swp
+
+# Operating System generated files
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
